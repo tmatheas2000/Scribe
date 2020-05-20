@@ -1,0 +1,46 @@
+<div class="row">
+    <div class="offset-sm-1 col-sm-10">
+        <div class="card text-blank">
+            <div class="card-body">
+                <div class="card-title text-center">
+                    <h3>Profile</h3>
+                </div>
+                <hr/>
+                <div class="card-text">
+                    <div class="row">
+                        <div class="col-sm-3 text-center">
+                            <img [src]="user.photoURL" height="200" width="200" class="img-circle">
+                        </div>
+                        <div class="col-sm-9">
+                            <h2><i class="fa fa-user mr-3"></i>{{user.firstName+" "+user.lastName}}</h2>
+                            <h4><i class="fa fa-envelope mr-3"></i>{{user.email}}</h4>
+                            <h5><i class="fa fa-list-alt mr-3"></i>{{user.bio}}</h5>
+                            <i class="fa fa-tag mr-3 ml-1"></i>
+                            <span class="badge badge-pill badge-danger badge-lg mr-3" *ngFor="let interest of user.interests">
+                                {{interest}}
+                            </span><br>
+                            <i class="fa fa-soccer-ball-o mr-3 ml-1"></i>
+                            <span class="badge badge-pill badge-info badge-lg mr-3" *ngFor="let hobby of user.hobbies">
+                                {{hobby}}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="offset-sm-1 col-sm-10">
+        <div class="card text-blank">
+            <div class="card-body">
+                <div class="card-title">
+                    <h3>Posts by {{user.firstName}} ({{posts.length}})</h3>
+                </div>
+                <div class="card-text">
+                    <app-post *ngFor="let post of posts" [post]="post"></app-post>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
