@@ -24,6 +24,8 @@ import { PostComponent } from './post/post.component';
 import { ViewComponent } from './view/view.component';
 import { CommentsComponent } from './comments/comments.component';
 import { EditProfileComponent } from './edit-profile/edit-profile.component';
+import { ServiceWorkerModule } from '@angular/service-worker';
+import { environment } from '../environments/environment';
 
 let firebaseConfig = {
   apiKey: "AIzaSyDi5XfDy2cbJcApeqU_-7IkU_GbXU97XJE",
@@ -56,12 +58,13 @@ firebase.initializeApp(firebaseConfig);
     EditProfileComponent
   ],
   imports: [
-    BrowserModule,
+    BrowserModule.withServerTransition({ appId: 'serverApp' }),
     AppRoutingModule,
     FormsModule,
     ReactiveFormsModule,
     AngularEditorModule,
-    HttpClientModule, 
+    HttpClientModule,
+    ServiceWorkerModule.register('ngsw-worker.js', { enabled: environment.production }),
   ],
   providers: [AuthService],
   bootstrap: [AppComponent]

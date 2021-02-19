@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": "dist/Scribe",
+    "public": "dist/Scribe/browser",
     "ignore": [
       "firebase.json",
       "**/.*",
