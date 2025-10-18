@@ -1,36 +1,44 @@
-<div class="row mt-5" *ngIf="loggedIn">
+@if (loggedIn) {
+  <div class="row mt-5">
     <div class="col">
-        <textarea rows="2" placeholder="Your comment here ..." [(ngModel)]="comment"></textarea>
+      <textarea rows="2" placeholder="Your comment here ..." [(ngModel)]="comment"></textarea>
     </div>
-</div>
+  </div>
+}
 
-<div class="row" *ngIf="loggedIn">
+@if (loggedIn) {
+  <div class="row">
     <div class="col">
-        <div class="pull-right">
-            <button class="btn btn-primary" (click)="postComment()">Post</button>
-        </div>
+      <div class="pull-right">
+        <button class="btn btn-primary" (click)="postComment()">Post</button>
+      </div>
     </div>
-</div>
+  </div>
+}
 
-<div class="alert alert-primary" *ngIf="!loggedIn">
+@if (!loggedIn) {
+  <div class="alert alert-primary">
     Please login to post a comment.
-</div>
+  </div>
+}
 
 <h4>Comments({{comments.length}})</h4>
 
-<div class="row mt-3" *ngFor="let comment of comments">
+@for (comment of comments; track comment) {
+  <div class="row mt-3">
     <div class="col">
-        <div class="card">
-            <div class="card-header">
-                {{comment.ownerName}} <i>commented on </i>{{
-                    comment.created.toDate() | date: 'MMM dd, yyyy h:mm a'
-                }}
-            </div>
-            <div class="card-body">
-                <div class="card-text">
-                    {{comment.text}}
-                </div>
-            </div>
+      <div class="card">
+        <div class="card-header">
+          {{comment.ownerName}} <i>commented on </i>{{
+          comment.created.toDate() | date: 'MMM dd, yyyy h:mm a'
+          }}
         </div>
+        <div class="card-body">
+          <div class="card-text">
+            {{comment.text}}
+          </div>
+        </div>
+      </div>
     </div>
-</div>
+  </div>
+}

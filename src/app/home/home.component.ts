@@ -1,14 +1,15 @@
 import { Component, OnInit } from '@angular/core';
-import {FormBuilder, FormGroup, FormControl, Validators } from '@angular/forms';
+import {UntypedFormBuilder, UntypedFormGroup, FormControl, Validators } from '@angular/forms';
 
 @Component({
-  selector: 'app-home',
-  templateUrl: './home.component.html',
-  styleUrls: ['./home.component.css']
+    selector: 'app-home',
+    templateUrl: './home.component.html',
+    styleUrls: ['./home.component.css'],
+    standalone: false
 })
 export class HomeComponent implements OnInit {
   
-  myForm:FormGroup;
+  myForm:UntypedFormGroup;
 
   simpleInterest:number;
   principalAmount:number;
@@ -27,7 +28,7 @@ export class HomeComponent implements OnInit {
 
   }
 
-  constructor(public fb:FormBuilder) 
+  constructor(public fb:UntypedFormBuilder) 
   {
     this.myForm=this.fb.group({
       principalAmount:['', [Validators.required]],

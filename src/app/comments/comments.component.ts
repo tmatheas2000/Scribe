@@ -1,69 +1,86 @@
-import { Component, OnInit, Input } from '@angular/core';
-import * as firebase from 'firebase/app';
-import 'firebase/firestore';
-import 'firebase/auth';
+import { Component, Input, OnInit, NgZone } from '@angular/core';
+import { Auth, onAuthStateChanged, User } from '@angular/fire/auth';
+import {
+  Firestore,
+  addDoc,
+  collection,
+  query,
+  where,
+  orderBy,
+  getDocs,
+  serverTimestamp
+} from '@angular/fire/firestore';
 
 @Component({
   selector: 'app-comments',
   templateUrl: './comments.component.html',
-  styleUrls: ['./comments.component.css']
+  styleUrls: ['./comments.component.css'],
+  standalone: false
 })
 export class CommentsComponent implements OnInit {
+  comment = '';
+  comments: any[] = [];
+  loggedIn = false;
+  currentUser: User | null = null;
 
-  comment:string="";
-  comments:any[]=[];
-  loggedIn:boolean=false;
+  @Input() postId!: string;
 
-  @Input("postId") postId:string; 
-
-  constructor() { 
-    
-    firebase.auth().onAuthStateChanged((user)=>{
-      if(user){
-        this.loggedIn=true;
-      }
-      else{
-        this.loggedIn=false;
-      }
-    })
+  constructor(
+    private firestore: Firestore,
+    private auth: Auth,
+    private ngZone: NgZone
+  ) {
+    // ✅ Track auth state
+    onAuthStateChanged(this.auth, (user) => {
+      this.ngZone.run(() => {
+        this.loggedIn = !!user;
+        this.currentUser = user;
+      });
+    });
   }
 
-  postComment(){
-    
-    if(this.comment.length<5){
+  async postComment() {
+    if (this.comment.trim().length < 5 || !this.currentUser) {
       return;
     }
 
-    firebase.firestore().collection("comments").add({
-      text:this.comment,
-      post:this.postId,
-      owner:firebase.auth().currentUser.uid,
-      ownerName:firebase.auth().currentUser.displayName,
-      created:firebase.firestore.FieldValue.serverTimestamp()
-    }).then((data)=>{
-      console.log("Comment is saved!");
-      this.getComments();
-    }).catch((error)=>{
-      console.log(error);
-    })
+    try {
+      const commentsRef = collection(this.firestore, 'comments');
+      await addDoc(commentsRef, {
+        text: this.comment,
+        post: this.postId,
+        owner: this.currentUser.uid,
+        ownerName: this.currentUser.displayName || 'Anonymous',
+        created: serverTimestamp()
+      });
+
+      console.log('Comment saved!');
+      this.comment = '';
+      await this.getComments();
+    } catch (error) {
+      console.error('Error posting comment:', error);
+    }
   }
 
-  getComments(){
+  async getComments() {
+    this.comments = [];
 
-    this.comments=[];
-    
-    firebase.firestore().collection("comments").where("post","==",this.postId)
-    .orderBy("created","desc").get().then((data)=>{
-      
-      data.docs.forEach((commentRef)=>{
-        this.comments.push(commentRef.data())
-      })
-    })
+    try {
+      const commentsRef = collection(this.firestore, 'comments');
+      const q = query(
+        commentsRef,
+        where('post', '==', this.postId),
+        orderBy('created', 'desc')
+      );
 
+      const querySnapshot = await getDocs(q);
+      this.comments = querySnapshot.docs.map((doc) => doc.data());
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+    }
   }
 
   ngOnInit(): void {
     this.getComments();
   }
-
 }

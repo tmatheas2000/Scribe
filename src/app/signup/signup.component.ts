@@ -1,77 +1,93 @@
 import { Component, OnInit } from '@angular/core';
-import {FormBuilder, FormGroup, FormControl, Validators } from '@angular/forms';
-import {AuthService} from '../auth.service';
-import * as firebase from 'firebase/app';
-import 'firebase/firestore';
-import 'firebase/auth';
+import {
+  UntypedFormBuilder,
+  UntypedFormGroup,
+  Validators
+} from '@angular/forms';
+import { AuthService } from '../auth.service';
+import { Firestore, collection, doc, setDoc } from '@angular/fire/firestore';
+import { NgZone } from '@angular/core';
 
 @Component({
   selector: 'app-signup',
   templateUrl: './signup.component.html',
-  styleUrls: ['./signup.component.css']
+  styleUrls: ['./signup.component.css'],
+  standalone: false
 })
 export class SignupComponent implements OnInit {
+  myForm: UntypedFormGroup;
+  message = '';
+  userError: any;
 
-  myForm:FormGroup;
-  message:string="";
-  userError:any;
-
-  constructor(public fb:FormBuilder, public authService:AuthService) 
-  {
-    this.myForm=this.fb.group({
-      firstName:['', [Validators.required]],
-      lastName:['', [Validators.required]],
-      email:['', [Validators.required]],
-      password:['', [Validators.required,Validators.minLength(8)]],
-      confirmPassword:['', [Validators.required,Validators.minLength(8)]]
-    },{
-      validator:this.checkIfMatchingPasswords("password","confirmPassword")
-    })
-   }
-
-  onSubmit(signupform)
-  {
-    let email:string=signupform.value.email;
-    let password:string=signupform.value.password;
-    let firstName:string=signupform.value.firstName;
-    let lastName:string=signupform.value.lastName;
-
-    
-    this.authService.signup(email,password,firstName,lastName).then((user:any)=>{
-
-      firebase.firestore().collection("users").doc(user.uid).set({
-        firstName:signupform.value.firstName,
-        lastName:signupform.value.lastName,
-        email:signupform.value.email,
-        photoURL:user.photoURL,
-        interests:"",
-        bio:"",
-        hobbies:""
-      }).then(()=>{
-
-        this.message="You have signed up successfully. Please login." 
-      })
-    }).catch((error)=>{console.log(error);
-      this.userError=error;
-    })
+  constructor(
+    public fb: UntypedFormBuilder,
+    public authService: AuthService,
+    private firestore: Firestore,
+    private ngZone: NgZone
+  ) {
+    this.myForm = this.fb.group(
+      {
+        firstName: ['', [Validators.required]],
+        lastName: ['', [Validators.required]],
+        email: ['', [Validators.required, Validators.email]],
+        password: ['', [Validators.required, Validators.minLength(8)]],
+        confirmPassword: ['', [Validators.required, Validators.minLength(8)]]
+      },
+      {
+        validator: this.checkIfMatchingPasswords('password', 'confirmPassword')
+      }
+    );
   }
 
-  checkIfMatchingPasswords(passwordKey:string,confirmPasswordKey:string)
-  {
-    return (group:FormGroup)=>{
-      let password=group.controls[passwordKey];
-      let confirmPassword=group.controls[confirmPasswordKey];
-      if(password.value==confirmPassword.value)
-      { 
-        return;
-      }
-      else{
-        confirmPassword.setErrors({notEqualToPassword:true})
-      }
+  async onSubmit(signupform: UntypedFormGroup) {
+    if (!signupform.valid) return;
+
+    const { firstName, lastName, email, password } = signupform.value;
+
+    try {
+      // Signup via your AuthService (should already use modular Firebase)
+      const user: any = await this.authService.signup(
+        email,
+        password,
+        firstName,
+        lastName
+      );
+
+      // Save user info in Firestore
+      const usersRef = collection(this.firestore, 'users');
+      const userDoc = doc(usersRef, user.uid);
+
+      await setDoc(userDoc, {
+        firstName,
+        lastName,
+        email,
+        photoURL: user.photoURL || '',
+        interests: '',
+        bio: '',
+        hobbies: ''
+      });
+
+      this.ngZone.run(() => {
+        this.message = 'You have signed up successfully. Please login.';
+      });
+    } catch (error) {
+      console.error(error);
+      this.userError = error;
     }
   }
 
-  ngOnInit(): void {
+  checkIfMatchingPasswords(passwordKey: string, confirmPasswordKey: string) {
+    return (group: UntypedFormGroup) => {
+      const password = group.controls[passwordKey];
+      const confirmPassword = group.controls[confirmPasswordKey];
+
+      if (password.value !== confirmPassword.value) {
+        confirmPassword.setErrors({ notEqualToPassword: true });
+      } else {
+        confirmPassword.setErrors(null);
+      }
+    };
   }
 
+  ngOnInit(): void {}
 }
