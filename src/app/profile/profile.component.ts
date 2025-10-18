@@ -1,50 +1,76 @@
-import { Component, OnInit } from '@angular/core';
-import {ActivatedRoute} from '@angular/router';
-import * as firebase from 'firebase/app';
-import 'firebase/firestore';
-import 'firebase/auth';
+import { Component, OnInit, NgZone } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import {
+  Firestore,
+  collection,
+  doc,
+  getDoc,
+  query,
+  where,
+  getDocs
+} from '@angular/fire/firestore';
 
 @Component({
   selector: 'app-profile',
   templateUrl: './profile.component.html',
-  styleUrls: ['./profile.component.css']
+  styleUrls: ['./profile.component.css'],
+  standalone: false
 })
 export class ProfileComponent implements OnInit {
+  user: any = {};
+  posts: any[] = [];
 
-  user:any={};
-  posts:any[]=[];
-
-  constructor(public activatedRoute:ActivatedRoute) {
-
-    let id=this.activatedRoute.snapshot.paramMap.get('id');
-    console.log(id);
-    this.getProfile(id);
-    this.getUsersPosts(id);
-
-   }
-
-  ngOnInit(): void {
+  constructor(
+    private activatedRoute: ActivatedRoute,
+    private firestore: Firestore,
+    private ngZone: NgZone
+  ) {
+    const id = this.activatedRoute.snapshot.paramMap.get('id');
+    if (id) {
+      this.getProfile(id);
+      this.getUsersPosts(id);
+    }
   }
 
-  getProfile(id:string){
+  ngOnInit(): void {}
 
-    firebase.firestore().collection("users").doc(id).get().then((documentSnapshot)=>{
-      this.user=documentSnapshot.data();
-      this.user.displayName=this.user.firstName+" "+this.user.lastName;
-      this.user.id=documentSnapshot.id;
-      this.user.interests=this.user.interests.split(",");
-      this.user.hobbies=this.user.hobbies.split(",");
-      console.log(this.user);
-    }).catch((error)=>{
-      console.log(error);
-    })
+  async getProfile(id: string) {
+    try {
+      const userDocRef = doc(this.firestore, `users/${id}`);
+      const documentSnapshot = await getDoc(userDocRef);
 
+      if (documentSnapshot.exists()) {
+        const userData = documentSnapshot.data();
+
+        this.ngZone.run(() => {
+          this.user = {
+            ...userData,
+            displayName: `${userData.firstName} ${userData.lastName}`,
+            id: documentSnapshot.id,
+            interests: userData.interests ? userData.interests.split(',') : [],
+            hobbies: userData.hobbies ? userData.hobbies.split(',') : []
+          };
+          console.log(this.user);
+        });
+      } else {
+        console.warn('User not found!');
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
   }
-  getUsersPosts(id:string){
 
-    firebase.firestore().collection("posts").where("owner","==",id).get().then((data)=>{
-      this.posts=data.docs; 
-    })
+  async getUsersPosts(id: string) {
+    try {
+      const postsRef = collection(this.firestore, 'posts');
+      const q = query(postsRef, where('owner', '==', id));
+      const querySnapshot = await getDocs(q);
+
+      this.ngZone.run(() => {
+        this.posts = querySnapshot.docs;
+      });
+    } catch (error) {
+      console.error('Error fetching user posts:', error);
+    }
   }
-
 }
